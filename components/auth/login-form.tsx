@@ -2,7 +2,7 @@
 import React from "react";
 import * as z from "zod";
 import { CardWrapper } from "./card-wrapper";
-import { useForm } from "react-hook-form";
+import { SubmitHandler, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LoginSchema } from "@/schemas";
 import {
@@ -16,16 +16,36 @@ import {
 import { Input } from "../ui/input";
 import { FormError } from "../form-error";
 import { FormSuccess } from "../form-success";
+import { login } from "@/actions/login";
 
 export const LoginForm = () => {
+  const [ispending,startTransition] = React.useTransition();
+  const [error, setError] = React.useState<string | undefined>();
+  const [success, setSuccess] = React.useState<string | undefined>();
+
   const form = useForm<z.infer<typeof LoginSchema>>({
     resolver: zodResolver(LoginSchema),
     defaultValues: { email: "", password: "" },
   }); // useForm hook
 
-  const onSubmit = form.handleSubmit((data) => {
-    console.log(data);
-  }); // onSubmit function
+const onSubmit=(data:z.infer<typeof LoginSchema >) => {
+  setError(undefined);
+  setSuccess(undefined);
+  // login(data);
+  startTransition(()=>{
+    login(data).then((res)=>{
+      if (!res.success) {
+        setError(res.message);
+        return;
+      }else{
+        setSuccess(res.message);
+      }
+    
+
+     
+    })
+  });
+};
   return (
     <CardWrapper
       headerLabel={"Welcome back"}
@@ -44,6 +64,7 @@ export const LoginForm = () => {
                   <FormLabel htmlFor="email">Email</FormLabel>
                   <FormControl>
                     <Input
+                    disabled={ispending}
                       type="email"
                       {...field}
                       placeholder="john.doe@example.com"
@@ -54,6 +75,7 @@ export const LoginForm = () => {
               )}
             />
             <FormField
+             disabled={ispending}
               control={form.control}
               name="password"
               render={({ field }) => (
@@ -67,9 +89,10 @@ export const LoginForm = () => {
               )}
             />
           </div>
-          <FormError message={'ghghgghgh'} /> 
-          <FormSuccess message='Successfully submitted!'/>
+          <FormError message={error} />
+          <FormSuccess message={success} />
           <button
+            disabled={ispending}
             type="submit"
             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
           >
